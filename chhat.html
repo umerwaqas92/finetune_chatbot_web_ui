@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>ClassDojo FAQ</title>
+</head>
+<body>
+	<h1>ClassDojo FAQ</h1>
+
+	<!-- Add a form for the user to input their query -->
+	<form onsubmit="submitQuery(event)">
+		<label for="query">Enter your query:</label>
+		<input type="text" id="query" name="query" required>
+		<button type="submit">Get Answer</button>
+	</form>
+
+	<!-- Add a placeholder for the API response -->
+	<div id="response"></div>
+
+	<!-- Add a script to send the API request and display the response -->
+	<script>
+		function submitQuery(event) {
+			// Prevent the form from submitting and reloading the page
+			event.preventDefault();
+
+			// Get the user's query from the form input
+			const query = document.getElementById("query").value;
+
+			// Send a POST request to the API endpoint with the user's query
+			fetch("https://manojdojo.pythonanywhere.com/answer", {
+				method: "POST",
+				body: JSON.stringify({query}),
+				headers: {"Content-type": "application/json; charset=UTF-8"}
+			})
+			.then(response => response.json())
+			.then(data => {
+				// Display the API response in the browser
+				document.getElementById("response").innerHTML = data.response;
+			})
+			.catch(error => console.log(error));
+		}
+	</script>
+</body>
+</html>

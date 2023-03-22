@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+    
+<head>
+
+    <script >
+
+function editFile(filename) {
+  // Redirect the user to the edit page for the selected file
+  window.location.href = `/edit?filename=${filename}`;
+}
+
+
+
+function deleteFile(filename) {
+  if (confirm(`Are you sure you want to delete ${filename}?`)) {
+    // Send a POST request to the server to delete the file
+    fetch('/delete', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ filename })
+    })
+      .then(response => {
+        if (response.ok) {
+          // Reload the page to update the file list
+          location.reload();
+        } else {
+          // Display an error message if the deletion failed
+          alert('Failed to delete file');
+        }
+      })
+      .catch(error => {
+        // Display an error message if there was a network error
+        alert('Network error');
+      });
+  }
+}
+
+
+
+    </script>
+
+    <style>.chatbox__support {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        z-index: 9999;
+      }
+      </style>
+    <meta charset="UTF-8">
+    <title>Upload Document and Update API Key</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.6.0/css/bootstrap.min.css">
+
+    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+        <a class="navbar-brand" href="#">ChatBot</a>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav ml-auto">
+                <li class="nav-item">
+                    <a class="nav-link"href="javascript:history.back()">Back</a>
+                </li>
+                <li class="nav-item active">
+                    
+                    <a class="nav-link" href="upload">Upload file & fine-tune setting</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="files">Files</a>
+                </li>
+             
+            </ul>
+        </div>
+    </nav>
+
+    
+</head>
+<body>
+
+    <!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,300;0,400;0,600;1,300&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='./assets/css/chat.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='./assets/css/typing.css') }}">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+    <title>Chatbox</title>
+</head>
+<body>
+    <div class="container">
+        <div class="chatbox">
+            <div class="chatbox__support">
+                <div class="chatbox__header">
+                    <!-- <div class="chatbox__image--header">
+                        <img src="./images/image.png" alt="image">
+                    </div> -->
+                    <div class="chatbox__content--header">
+                        <h4 class="chatbox__heading--header">Chat support</h4>
+                        <p class="chatbox__description--header">This an ai based chatbot</p>
+                    </div>
+                </div>
+                <div class="chatbox__messages">
+                    <div>
+                     
+                    </div>
+                </div>
+                <div class="chatbox__footer">
+                    <!-- <img src="./images/icons/emojis.svg" alt=""> -->
+                    <!-- <img src="./images/icons/microphone.svg" alt=""> -->
+                    <input type="text" placeholder="Write a message..." style="width:250px; text-align: left;">
+
+                    <p class="chatbox__send--footer">Send</p>
+                    <!-- <img src="./images/icons/attachment.svg" alt=""> -->
+                </div>
+            </div>
+            <div class="chatbox__button">
+                <button>button</button>
+            </div>
+        </div>
+    </div>
+    <script src="{{ url_for('static', filename='./assets/js/Chat.js') }}"></script>
+    <script src="{{ url_for('static', filename='./app.js') }}"></script>
+</body>
+</html>
+
+    <div class="container my-5">
+        <h1 class="mb-3">List of Files</h1>
+        <ul class="list-group" style="max-height: 300px; overflow-y: scroll;">
+
+		
+      
+		<ul class="list-group">
+			{% for file in files %}
+            <li class="list-group-item">
+                <a href="/edit?filename={{ file }}">{{ file }}</a>
+                <button class="btn btn-primary btn-sm float-right mr-1" onclick="editFile('{{ file }}')">Edit</button> 
+                <button class="btn btn-danger btn-sm float-right" onclick="deleteFile('{{ file }}')">Delete</button>
+              </li>
+              
+                          {% endfor %}
+		</ul>
+</ul>
+
+	</div>
+
+
+   
+    
+
+
+    <div class="container">
+
+        <form action="/create_new_page" method="POST">
+            <div class="form-group">
+                <label for="filename">Filename:</label>
+                <input type="text" id="filename" name="filename" class="form-control" required>
+            </div>
+            <button type="submit" class="btn btn-primary">Create new file</button>
+        </form>
+
+
+        <!-- <h1 class="my-5">Upload Document</h1> -->
+        {% if error %}
+            <div class="alert alert-danger">{{ error }}</div>
+        {% endif %}
+        {% if success %}
+            <div class="alert alert-success">{{ success }}</div>
+        {% endif %}
+
+
+        <form action="/uploadFile" method="POST" enctype="multipart/form-data">
+            <div class="form-group">
+                <label for="document">Select new file or doc:</label>
+                <input type="file" id="document" name="document" class="form-control-file">
+            </div>
+        
+            <button id="upload-file"  name="upload-file" type="submit" class="btn btn-primary">Upload files</button>
+        </form>
+        
+
+
+        <h1 class="my-5">Update OpenAI configuration</h1>
+
+        <form method="POST" enctype="multipart/form-data">
+            <!-- <div class="form-group">
+                <label for="document">Document file:</label>
+                <input type="file" name="document" class="form-control-file">
+            </div> -->
+
+
+
+            <div class="form-group">
+                <label for="api_key">OpenAI API Key:</label>
+                <input value="{{ api_key }}" type="text" name="api_key" class="form-control" placeholder="Enter API Key">
+                <label for="api_key">temperature:</label>
+                <input value="{{ api_temp }}" type="text" name="api_temp" class="form-control" placeholder="Enter temperature">
+
+                <label for="api_key">Model Name:</label>
+                <input value="{{ api_model_name }}" type="text" name="api_model_name" class="form-control" placeholder="Enter Model Name">
+
+                <label for="api_key">Max Token:</label>
+                <input value="{{ api_token_max }}" type="text" name="api_token_max" class="form-control" placeholder="Enter Max token">
+            </div>
+            <button name="submit" type="submit" class="btn btn-primary">Save</button>
+            
+              
+            <button name="start-training" type="submit" class="btn btn-success" id="start-training">Start Training</button>
+            <button name="chat_screen" type="submit" class="btn btn-success" id="chat_screen">Go to chat screen</button>
+            <a href="files" class="btn btn-success">Show all files</a>
+
+
+
+            
+        </form>
+
+    <p>*Note: After changing any data, you should re train this model </p>
+    </div>
+    <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script> -->
+
+</body>
+</html>

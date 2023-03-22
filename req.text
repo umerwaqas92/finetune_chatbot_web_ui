@@ -1,0 +1,6 @@
+pip install Flask
+pip install requests
+pip install flask_cors
+pip install langchain
+pip install llama_index
+pip install datetime
