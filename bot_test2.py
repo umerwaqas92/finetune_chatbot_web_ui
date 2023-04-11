@@ -4,7 +4,7 @@ import sys
 import os
 # from IPython.display import Markdown, display
 
-os.environ["OPENAI_API_KEY"]="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"
+os.environ["OPENAI_API_KEY"]="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"
 
 def construct_index(directory_path):
     # set maximum input size
@@ -43,5 +43,5 @@ def ask_ai():
         print(f"Response: {response.response}")
         # display(Markdown(f"Response: <b>{response.response}</b>"))
 
-construct_index("context_data/data")
+# construct_index("context_data/data")
 ask_ai()

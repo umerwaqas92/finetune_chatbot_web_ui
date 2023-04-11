@@ -31,6 +31,24 @@ VERIFICATION_TOKEN = '123456789'
 ACCESS_TOKEN = 'EAAwBWAci3sIBAJjc9s9Xvh6EqRsZBNke6nSTNBDrwTp5dgZCV18NbRc6dtUJFQRPZA6UXiZC4xPYtD75ZBZAg8CttANHCvSDITCttXglZBKYyTIMAw4alGUJRAQB1qqsnNMQEY5SXRCZB04Nf9iUasQmmhnU4c7S7bZAFBa0eiFLpyxYGTRW8jy7CxpwEADhhgNgZB4SThR0AnggZDZD'
 Phone_Number_ID = "102566059470141"
 
+
+def update_config():
+    with open(api_key_json, 'r') as f:
+        jsonfile= json.load(f)
+        api_key = jsonfile['api_key'].strip()
+        print(jsonfile)
+        os.environ["OPENAI_API_KEY"]=api_key
+        print("set api key |"+os.environ["OPENAI_API_KEY"]+"|")
+        api_temp = jsonfile['api_temp']
+        api_model_name = jsonfile['api_model_name']
+        api_token_max = jsonfile['api_token_max']
+ 
+        
+
+
+update_config()
+
+
 # Route to handle subscription verification requests
 @app.route('/webhook', methods=['GET'])
 def handle_verification():
@@ -78,14 +96,8 @@ def send_message(recipient_phone_number, message):
     print("Sent message")
     print(response.text)
 
-with open(api_key_json, 'r') as f:
-    jsonfile= json.load(f)
 
-    api_key = jsonfile['api_key'].strip()
-    api_temp = jsonfile['api_temp']
-    api_model_name = jsonfile['api_model_name']
-    api_token_max = jsonfile['api_token_max']
-    os.environ["OPENAI_API_KEY"]=api_key
+    
 
 
 
@@ -197,6 +209,7 @@ def clear_chat_history():
 @app.route('/answer', methods=['POST'])
 def answer():
     query = request.json['query']
+    
     try:
         response = ask_ai(query)
     except Exception as e:
@@ -239,6 +252,7 @@ pickle_file_path = os.path.join(my_dir, 'index.json')
 index2 = GPTSimpleVectorIndex.load_from_disk(pickle_file_path)
 
 def ask_ai(query):
+    # update_config()
     # if(index2==None):
     #     pickle_file_path = os.path.join(my_dir, 'index.json')
     #     index2 = GPTSimpleVectorIndex.load_from_disk(pickle_file_path)
