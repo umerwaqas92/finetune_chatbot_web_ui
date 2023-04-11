@@ -1,9 +1,7 @@
-pip install Flask
-pip install requests
-pip install flask_cors
-pip install langchain
-pip install llama_index
-pip install datetime
-pip install PyPDF2
-pip install --upgrade PyPDF2
-pip uninstall llama_index
+Flask
+requests
+flask_cors
+langchain
+llama_index
+datetime
+PyPDF2
