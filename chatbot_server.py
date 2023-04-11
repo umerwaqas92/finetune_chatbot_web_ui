@@ -197,7 +197,10 @@ def clear_chat_history():
 @app.route('/answer', methods=['POST'])
 def answer():
     query = request.json['query']
-    response = ask_ai(query)
+    try:
+        response = ask_ai(query)
+    except Exception as e:
+        response = {"response": "Sorry, I'm not sure how to answer that."}
     return jsonify(response)
 
 @app.route('/save', methods=['POST'])
@@ -230,6 +233,7 @@ else:
     query_responses = {}
 
 
+
 my_dir = os.path.dirname(__file__)
 pickle_file_path = os.path.join(my_dir, 'index.json')
 index2 = GPTSimpleVectorIndex.load_from_disk(pickle_file_path)
@@ -238,7 +242,7 @@ def ask_ai(query):
     # if(index2==None):
     #     pickle_file_path = os.path.join(my_dir, 'index.json')
     #     index2 = GPTSimpleVectorIndex.load_from_disk(pickle_file_path)
-
+   
     response = index2.query(query, response_mode="compact")
     return {"response": response.response}
 
@@ -321,7 +325,12 @@ def index():
     if request.method == 'POST':
         query = request.form['query']
 
-        response_text = ask_ai(query)['response']
+        try:
+        # Get response from AI
+            response = ask_ai(query)
+            response_text = response['response']
+        except:
+            response_text = "Sorry, I don't understand."
 
         # Save query-response pair to dictionary and write to file
         query_responses[query] = response_text
