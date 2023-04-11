@@ -4,7 +4,7 @@ import sys
 import os
 # from IPython.display import Markdown, display
 
-os.environ["OPENAI_API_KEY"]="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"
+os.environ["OPENAI_API_KEY"]="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"
 
 def construct_index(directory_path):
     # set maximum input size
@@ -31,11 +31,12 @@ def construct_index(directory_path):
 
     return index
  
-index2 = GPTSimpleVectorIndex.load_from_disk('index.json')
+
 
 def ask_ai():
    
     while True: 
+        index2 = GPTSimpleVectorIndex.load_from_disk('index.json')
         query = input("What do you want to ask? ")
         response = index2.query(query)
         # //bot emoji
@@ -43,5 +44,5 @@ def ask_ai():
         print(f"Response: {response.response}")
         # display(Markdown(f"Response: <b>{response.response}</b>"))
 
-# construct_index("context_data/data")
+construct_index("context_data/data")
 ask_ai()

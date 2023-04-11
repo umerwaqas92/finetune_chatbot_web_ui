@@ -10,6 +10,7 @@ from PyPDF2 import PdfReader
 
 
 
+
 app = Flask(__name__)
 CORS(app)
 
@@ -37,11 +38,13 @@ def update_config():
         jsonfile= json.load(f)
         api_key = jsonfile['api_key'].strip()
         print(jsonfile)
-        os.environ["OPENAI_API_KEY"]=api_key
+        os.environ["OPENAI_API_KEY"]=api_key.strip()
         print("set api key |"+os.environ["OPENAI_API_KEY"]+"|")
+        print("set api key |"+"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"+"|")
         api_temp = jsonfile['api_temp']
         api_model_name = jsonfile['api_model_name']
         api_token_max = jsonfile['api_token_max']
+        
  
         
 
@@ -143,6 +146,23 @@ def extract_text_from_pdfs(path_to_pdf):
 #     return index
 
 
+my_dir = os.path.dirname(__file__)
+pickle_file_path = os.path.join(my_dir, 'index.json')
+index2 = GPTSimpleVectorIndex.load_from_disk(pickle_file_path)
+
+def ask_ai(query):
+    # update_config()
+    # if(index2==None):
+    #     pickle_file_path = os.path.join(my_dir, 'index.json')
+    print(os.environ["OPENAI_API_KEY"])
+    os.environ["OPENAI_API_KEY"] = "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"
+
+   
+    response = index2.query(query, response_mode="compact")
+    return {"response": response.response}
+
+
+
 def construct_index(api_key, api_temp, api_model_name, api_token_max):
     # set api key
     # os.environ["OPENAI_API_KEY"]=api_key
@@ -152,7 +172,7 @@ def construct_index(api_key, api_temp, api_model_name, api_token_max):
     # set number of output tokens
     num_outputs = 2000
     # set maximum chunk overlap
-    max_chunk_overlap = 60
+    max_chunk_overlap = 20
     # set chunk size limit
     chunk_size_limit = 600 
 
@@ -176,14 +196,17 @@ def construct_index(api_key, api_temp, api_model_name, api_token_max):
     prompt_helper = PromptHelper(max_input_size, num_outputs, max_chunk_overlap, chunk_size_limit=chunk_size_limit)
 
     # define LLM
-    llm_predictor = LLMPredictor(llm=OpenAI(temperature=float(api_temp), model_name="gpt-3.5-turbo", max_tokens=int(api_token_max)))
+    llm_predictor = LLMPredictor(llm=OpenAI(temperature=float(api_temp), model_name=api_model_name, max_tokens=int(api_token_max)))
  
-    documents = SimpleDirectoryReader(pickle_file_path).load_data()
+    documents = SimpleDirectoryReader(my_dir+"/context_data/data").load_data()
     
     service_context = ServiceContext.from_defaults(llm_predictor=llm_predictor, prompt_helper=prompt_helper)
     index = GPTSimpleVectorIndex.from_documents(documents, service_context=service_context)
 
     index.save_to_disk('index.json')
+    global index2
+
+    index2=index
 
     return index
 
@@ -247,18 +270,6 @@ else:
 
 
 
-my_dir = os.path.dirname(__file__)
-pickle_file_path = os.path.join(my_dir, 'index.json')
-index2 = GPTSimpleVectorIndex.load_from_disk(pickle_file_path)
-
-def ask_ai(query):
-    # update_config()
-    # if(index2==None):
-    #     pickle_file_path = os.path.join(my_dir, 'index.json')
-    #     index2 = GPTSimpleVectorIndex.load_from_disk(pickle_file_path)
-   
-    response = index2.query(query, response_mode="compact")
-    return {"response": response.response}
 
 
 # def ask_ai(query):
@@ -477,10 +488,12 @@ def upload():
 
             return render_template('upload.html',success='File uploaded successfully',api_key=api_key, api_temp=api_temp, api_model_name=api_model_name, api_token_max=api_token_max,files=files)
         if 'save_config' in request.form:
-            api_key = request.form['api_key']
-            api_temp = request.form['api_temp']
-            api_model_name = request.form['api_model_name']
-            api_token_max = request.form['api_token_max']
+            api_key = request.form['api_key'].strip()
+            api_temp = request.form['api_temp'].strip()
+            api_model_name = request.form['api_model_name'].strip()
+            api_token_max = request.form['api_token_max'].strip()
+            
+            os.environ['OPENAI_API_KEY'] = api_key
             with open(my_dir+'/api_key.json', 'w') as f:
                 json.dump({'api_key':api_key,'api_temp':api_temp,'api_model_name':api_model_name,'api_token_max':api_token_max}, f)
                 return render_template('upload.html', success='Saved Configuratin',api_key=api_key, api_temp=api_temp, api_model_name=api_model_name, api_token_max=api_token_max,files=files)
@@ -489,10 +502,12 @@ def upload():
 
         if 'start-training' in request.form:
 
-            api_key = request.form['api_key']
-            api_temp = request.form['api_temp']
-            api_model_name = request.form['api_model_name']
-            api_token_max = request.form['api_token_max']
+            api_key = request.form['api_key'].strip()
+            api_temp = request.form['api_temp'].strip()
+            api_model_name = request.form['api_model_name'].strip()
+            api_token_max = request.form['api_token_max'].strip()
+           
+            os.environ['OPENAI_API_KEY'] = api_key
             with open(my_dir+'/api_key.json', 'w') as f:
                 json.dump({'api_key':api_key,'api_temp':api_temp,'api_model_name':api_model_name,'api_token_max':api_token_max}, f)
                 try:
@@ -520,10 +535,10 @@ def upload():
                 document_filename = document_file.filename
                 if not document_filename:
 
-                    api_key = request.form['api_key']
-                    api_temp = request.form['api_temp']
-                    api_model_name = request.form['api_model_name']
-                    api_token_max = request.form['api_token_max']
+                    api_key = request.form['api_key'].strip()
+                    api_temp = request.form['api_temp'].strip()
+                    api_model_name = request.form['api_model_name'].strip()
+                    api_token_max = request.form['api_token_max'].strip()
 
 
                     with open(api_key_json, 'w') as f:

@@ -10,8 +10,7 @@ from PyPDF2 import PdfReader
 
 
 
-os.environ["OPENAI_API_KEY"]="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"
-
+os.environ["OPENAI_API_KEY"]="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"
 
 def construct_index( api_temp, api_model_name, api_token_max):
     # set maximum input size
@@ -40,15 +39,12 @@ def construct_index( api_temp, api_model_name, api_token_max):
 
     return index
 
-my_dir = os.path.dirname(__file__)
-pickle_file_path = os.path.join(my_dir, 'index.json')
-index2 = GPTSimpleVectorIndex.load_from_disk(pickle_file_path)
+
 
 def ask_ai(query):
-    if(index2==None):
-        pickle_file_path = os.path.join(my_dir, 'index.json')
-        index2 = GPTSimpleVectorIndex.load_from_disk(pickle_file_path)
-
+    my_dir = os.path.dirname(__file__)
+    pickle_file_path = os.path.join(my_dir, 'index.json')
+    index2 = GPTSimpleVectorIndex.load_from_disk(pickle_file_path)
     response = index2.query(query, response_mode="compact")
     return {"response": response.response}
 
