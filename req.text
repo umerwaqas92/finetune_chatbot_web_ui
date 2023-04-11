@@ -6,5 +6,5 @@ pip install llama_index
 pip install datetime
 pip install PyPDF2
 pip install --upgrade PyPDF2
-pip uninstall llama_index
 pip install llama_index==0.4.40
+pip uninstall llama_index

@@ -13,6 +13,9 @@ from PyPDF2 import PdfReader
 app = Flask(__name__)
 CORS(app)
 
+
+# os.environ["OPENAI_API_KEY"]="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"
+
 my_dir = os.path.dirname(__file__)
 api_key_json = os.path.join(my_dir, 'api_key.json')
 DATA_FILE = os.path.join(my_dir, 'query_responses.json')
@@ -20,6 +23,7 @@ DATA_FILE = os.path.join(my_dir, 'query_responses.json')
 islogin =False
 password = "123456"
 username = "admin"
+
 
 
 #whatsapp
@@ -81,8 +85,6 @@ with open(api_key_json, 'r') as f:
     api_temp = jsonfile['api_temp']
     api_model_name = jsonfile['api_model_name']
     api_token_max = jsonfile['api_token_max']
-
-
     os.environ["OPENAI_API_KEY"]=api_key
 
 
@@ -97,37 +99,67 @@ def extract_text_from_pdfs(path_to_pdf):
     return text
 
 
-def construct_index(api_key, api_temp, api_model_name, api_token_max):
+# def construct_index( api_temp, api_model_name, api_token_max):
     
+
+#     # set maximum input size
+#     max_input_size = 4096
+#     # set number of output tokens
+#     num_outputs = int(api_token_max)
+#     # set maximum chunk overlap
+#     max_chunk_overlap = 50
+#     # set chunk size limit
+#     chunk_size_limit = 1195
+
+#     my_dir = os.path.dirname(__file__)
+#     pickle_file_path = os.path.join(my_dir, 'context_data/data')
+
+
+#     # define LLM
+
+#     llm_predictor = LLMPredictor(llm=OpenAI(temperature=api_temp, model_name=api_model_name, max_tokens=num_outputs))
+#     prompt_helper = PromptHelper(max_input_size, num_outputs, max_chunk_overlap, chunk_size_limit=chunk_size_limit)
+
+#     documents = SimpleDirectoryReader(pickle_file_path).load_data()
+
+#     index = GPTSimpleVectorIndex(
+#         documents, llm_predictor=llm_predictor, prompt_helper=prompt_helper
+#     )
+
+#     index.save_to_disk(os.path.join(my_dir, 'index.json'))
+
+#     return index
+
+
+def construct_index(api_key, api_temp, api_model_name, api_token_max):
+    # set api key
     os.environ["OPENAI_API_KEY"]=api_key
+
     # set maximum input size
     max_input_size = 4096
     # set number of output tokens
-    num_outputs = int(api_token_max)
+    num_outputs = 2000
     # set maximum chunk overlap
-    max_chunk_overlap = 50
+    max_chunk_overlap = 60
     # set chunk size limit
-    chunk_size_limit = 1195
-
-    my_dir = os.path.dirname(__file__)
-    pickle_file_path = os.path.join(my_dir, 'context_data/data')
-
+    chunk_size_limit = 600 
 
     # define LLM
-
-    llm_predictor = LLMPredictor(llm=OpenAI(temperature=api_temp, model_name=api_model_name, max_tokens=num_outputs))
+    
+    my_dir = os.path.dirname(__file__)
+    pickle_file_path = os.path.join(my_dir, 'index.json')
+    llm_predictor = LLMPredictor(llm=OpenAI(temperature=float(api_temp), model_name=api_model_name, max_tokens=int(api_token_max)))
     prompt_helper = PromptHelper(max_input_size, num_outputs, max_chunk_overlap, chunk_size_limit=chunk_size_limit)
-
+ 
     documents = SimpleDirectoryReader(pickle_file_path).load_data()
-
+    
     index = GPTSimpleVectorIndex(
         documents, llm_predictor=llm_predictor, prompt_helper=prompt_helper
     )
 
-    index.save_to_disk(os.path.join(my_dir, 'index.json'))
+    index.save_to_disk('index.json')
 
     return index
-
 
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -469,10 +501,7 @@ def upload():
                 return render_template('upload.html',api_key=api_key, api_temp=api_temp, api_model_name=api_model_name, api_token_max=api_token_max,files=files)
     else:
          with open(my_dir+'/api_key.json', 'r') as f:
-
-
                 jsonfile= json.load(f)
-
                 api_key = jsonfile['api_key']
                 api_temp = jsonfile['api_temp']
                 api_model_name = jsonfile['api_model_name']
@@ -482,3 +511,8 @@ def upload():
 
 if __name__ == '__main__':
     app.run(debug=True)
+
+
+
+# construct_index(apikey="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",api_temp=0.7,api_model_name="gpt-3.5-turbo",api_token_max=2000)
+# print("embedding done")
