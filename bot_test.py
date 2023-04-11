@@ -10,8 +10,7 @@ from PyPDF2 import PdfReader
 
 
 
-os.environ["OPENAI_API_KEY"]="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"
-
+os.environ["OPENAI_API_KEY"]="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"
 
 
 def construct_index( api_temp, api_model_name, api_token_max):
@@ -41,4 +40,20 @@ def construct_index( api_temp, api_model_name, api_token_max):
 
     return index
 
-construct_index(api_temp=0.5, api_model_name="text-davinci-003", api_token_max=2000)
+my_dir = os.path.dirname(__file__)
+pickle_file_path = os.path.join(my_dir, 'index.json')
+index2 = GPTSimpleVectorIndex.load_from_disk(pickle_file_path)
+
+def ask_ai(query):
+    if(index2==None):
+        pickle_file_path = os.path.join(my_dir, 'index.json')
+        index2 = GPTSimpleVectorIndex.load_from_disk(pickle_file_path)
+
+    response = index2.query(query, response_mode="compact")
+    return {"response": response.response}
+
+
+# construct_index(api_temp=0.5, api_model_name="text-davinci-003", api_token_max=2000)
+
+
+print(ask_ai("What is the codecanyone?"))

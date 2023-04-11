@@ -2,7 +2,7 @@ from flask import Flask, request, jsonify, render_template, redirect
 import requests
 import json
 import os
-from llama_index import SimpleDirectoryReader, GPTListIndex, readers, GPTSimpleVectorIndex, LLMPredictor, PromptHelper
+from llama_index import SimpleDirectoryReader, GPTListIndex, readers, GPTSimpleVectorIndex, LLMPredictor, PromptHelper,ServiceContext
 from langchain import OpenAI
 from flask_cors import CORS
 import datetime
@@ -81,7 +81,7 @@ def send_message(recipient_phone_number, message):
 with open(api_key_json, 'r') as f:
     jsonfile= json.load(f)
 
-    api_key = jsonfile['api_key']
+    api_key = jsonfile['api_key'].strip()
     api_temp = jsonfile['api_temp']
     api_model_name = jsonfile['api_model_name']
     api_token_max = jsonfile['api_token_max']
@@ -133,7 +133,7 @@ def extract_text_from_pdfs(path_to_pdf):
 
 def construct_index(api_key, api_temp, api_model_name, api_token_max):
     # set api key
-    os.environ["OPENAI_API_KEY"]=api_key
+    # os.environ["OPENAI_API_KEY"]=api_key
 
     # set maximum input size
     max_input_size = 4096
@@ -148,14 +148,28 @@ def construct_index(api_key, api_temp, api_model_name, api_token_max):
     
     my_dir = os.path.dirname(__file__)
     pickle_file_path = os.path.join(my_dir, 'index.json')
-    llm_predictor = LLMPredictor(llm=OpenAI(temperature=float(api_temp), model_name=api_model_name, max_tokens=int(api_token_max)))
+
+    
+    # llm_predictor = LLMPredictor(llm=OpenAI(temperature=float(api_temp), model_name=api_model_name, max_tokens=int(api_token_max)))
+    # prompt_helper = PromptHelper(max_input_size, num_outputs, max_chunk_overlap, chunk_size_limit=chunk_size_limit)
+ 
+    # documents = SimpleDirectoryReader(pickle_file_path).load_data()
+    
+    # index = GPTSimpleVectorIndex(
+    #     documents, llm_predictor=llm_predictor, prompt_helper=prompt_helper
+    # )
+
+    # index.save_to_disk('index.json')
+
     prompt_helper = PromptHelper(max_input_size, num_outputs, max_chunk_overlap, chunk_size_limit=chunk_size_limit)
+
+    # define LLM
+    llm_predictor = LLMPredictor(llm=OpenAI(temperature=float(api_temp), model_name="gpt-3.5-turbo", max_tokens=int(api_token_max)))
  
     documents = SimpleDirectoryReader(pickle_file_path).load_data()
     
-    index = GPTSimpleVectorIndex(
-        documents, llm_predictor=llm_predictor, prompt_helper=prompt_helper
-    )
+    service_context = ServiceContext.from_defaults(llm_predictor=llm_predictor, prompt_helper=prompt_helper)
+    index = GPTSimpleVectorIndex.from_documents(documents, service_context=service_context)
 
     index.save_to_disk('index.json')
 
@@ -215,21 +229,35 @@ if os.path.exists(DATA_FILE):
 else:
     query_responses = {}
 
-def ask_ai(query):
-    my_dir = os.path.dirname(__file__)
-    pickle_file_path = os.path.join(my_dir, 'index.json')
-    index = GPTSimpleVectorIndex.load_from_disk(pickle_file_path)
 
-    response = index.query(query, response_mode="compact")
+my_dir = os.path.dirname(__file__)
+pickle_file_path = os.path.join(my_dir, 'index.json')
+index2 = GPTSimpleVectorIndex.load_from_disk(pickle_file_path)
+
+def ask_ai(query):
+    # if(index2==None):
+    #     pickle_file_path = os.path.join(my_dir, 'index.json')
+    #     index2 = GPTSimpleVectorIndex.load_from_disk(pickle_file_path)
+
+    response = index2.query(query, response_mode="compact")
     return {"response": response.response}
 
+
+# def ask_ai(query):
+#     my_dir = os.path.dirname(__file__)
+
+#     pickle_file_path = os.path.join(my_dir, 'index.json')
+#     # set api key
+#     # os.environ["OPENAI_API_KEY"]="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"
+#     index = GPTSimpleVectorIndex.load_from_disk(pickle_file_path)
+
+#     response = index.query(query, response_mode="compact")
+#     return {"response": response.response}
 
 
 @app.route('/chatbot')
 def chatbot():
     return render_template('/chatbot.html')
-
-
 
 
 
@@ -458,7 +486,7 @@ def upload():
 
                 with open(my_dir+'/api_key.json', 'r') as f:
                                 jsonfile= json.load(f)
-                                api_key = jsonfile['api_key']
+                                api_key = jsonfile['api_key'].strip()
                                 api_temp = jsonfile['api_temp']
                                 api_model_name = jsonfile['api_model_name']
                                 api_token_max = jsonfile['api_token_max']
@@ -493,7 +521,7 @@ def upload():
         else:
             with open(my_dir+'/api_key.json', 'r') as f:
                 jsonfile= json.load(f)
-                api_key = jsonfile['api_key']
+                api_key = jsonfile['api_key'].strip()
                 api_temp = jsonfile['api_temp']
                 api_model_name = jsonfile['api_model_name']
                 api_token_max = jsonfile['api_token_max']
@@ -502,7 +530,7 @@ def upload():
     else:
          with open(my_dir+'/api_key.json', 'r') as f:
                 jsonfile= json.load(f)
-                api_key = jsonfile['api_key']
+                api_key = jsonfile['api_key'].strip()
                 api_temp = jsonfile['api_temp']
                 api_model_name = jsonfile['api_model_name']
                 api_token_max = jsonfile['api_token_max']
@@ -514,5 +542,12 @@ if __name__ == '__main__':
 
 
 
-# construct_index(apikey="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",api_temp=0.7,api_model_name="gpt-3.5-turbo",api_token_max=2000)
-# print("embedding done")
+# # construct_index(api_key=="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",api_temp=0.7,api_model_name="gpt-3.5-turbo",api_token_max=2000)
+# # print("embedding done")
+
+# try:
+#     print(ask_ai("Wha is codecanyon?"))
+# except Exception as e:
+#     print("error----->")
+#     print(e)
+#     print("error end----->")
