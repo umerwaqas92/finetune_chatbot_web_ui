@@ -10,7 +10,6 @@ const icons = {
     isNotClicked: '<img src="/images/icons/chatbox-icon.svg" />'
 }
 
-
 // Get elements
 const messageInput = document.querySelector('.chatbox__footer input');
 const chatMessages = document.querySelector('.chatbox__messages');
@@ -74,6 +73,11 @@ function sendMessage() {
 
   showTypingIndicator();
   
+////sociatehk.pythonanywhere.com/answer
+
+// const apiKey = require('../../api_key.json');
+// const url_answer = apiKey.base_url + "/answer";
+// console.log(url_answer);
 
   fetch("http://127.0.0.1:5000/answer", {
     method: 'POST',
@@ -95,6 +99,7 @@ function sendMessage() {
     addMessageToChatbox(msg, 'messages__item--visitor');
   })
   .catch(error => {
+    removeTypingIndicator();
     addMessageToChatbox("Please try again", 'messages__item--visitor');
     // console.error(error);
   });

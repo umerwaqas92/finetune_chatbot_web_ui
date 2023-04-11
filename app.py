@@ -5,7 +5,7 @@ import sys
 import os
 
 app = Flask(__name__)
-os.environ["OPENAI_API_KEY"]="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"
+os.environ["OPENAI_API_KEY"]="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"
 
 
 def construct_index():
@@ -19,6 +19,7 @@ def construct_index():
     chunk_size_limit = 600 
 
     # define LLM
+    
     my_dir = os.path.dirname(__file__)
     pickle_file_path = os.path.join(my_dir, 'index.json')
     llm_predictor = LLMPredictor(llm=OpenAI(temperature=0.5, model_name="text-davinci-003", max_tokens=num_outputs))
@@ -75,7 +76,8 @@ def home():
         return render_template('index.html')
     
 
+construct_index()
 
-if __name__ == '__main__':
-    app.run(debug=True)
+# if __name__ == '__main__':
+#     app.run(debug=True)
 

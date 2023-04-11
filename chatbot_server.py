@@ -6,6 +6,8 @@ from llama_index import SimpleDirectoryReader, GPTListIndex, readers, GPTSimpleV
 from langchain import OpenAI
 from flask_cors import CORS
 import datetime
+from PyPDF2 import PdfReader
+
 
 
 app = Flask(__name__)
@@ -15,6 +17,62 @@ my_dir = os.path.dirname(__file__)
 api_key_json = os.path.join(my_dir, 'api_key.json')
 DATA_FILE = os.path.join(my_dir, 'query_responses.json')
 
+islogin =False
+password = "123456"
+username = "admin"
+
+
+#whatsapp
+VERIFICATION_TOKEN = '123456789'
+ACCESS_TOKEN = 'EAAwBWAci3sIBAJjc9s9Xvh6EqRsZBNke6nSTNBDrwTp5dgZCV18NbRc6dtUJFQRPZA6UXiZC4xPYtD75ZBZAg8CttANHCvSDITCttXglZBKYyTIMAw4alGUJRAQB1qqsnNMQEY5SXRCZB04Nf9iUasQmmhnU4c7S7bZAFBa0eiFLpyxYGTRW8jy7CxpwEADhhgNgZB4SThR0AnggZDZD'
+Phone_Number_ID = "102566059470141"
+
+# Route to handle subscription verification requests
+@app.route('/webhook', methods=['GET'])
+def handle_verification():
+    # Verify the subscription request
+    if request.args.get('hub.verify_token') == VERIFICATION_TOKEN:
+        return request.args.get('hub.challenge')
+    else:
+        return 'Invalid verification token'
+
+@app.route('/webhook', methods=['GET', 'POST'])
+def webhook():
+    if request.method == 'GET':
+        if request.args.get('hub.mode') == 'subscribe' and request.args.get('hub.verify_token') == VERIFICATION_TOKEN:
+            return request.args.get('hub.challenge')
+        else:
+            return 'Invalid verification token'
+    elif request.method == 'POST':
+        data = request.json
+        message = data['entry'][0]['changes'][0]['value']['messages'][0]['text']['body']
+        print('Incoming webhook: ' + message)
+        sender = data['entry'][0]['changes'][0]['value']['messages'][0]['from']
+        recipient = data['entry'][0]['changes'][0]['value']['metadata']['display_phone_number']
+        response=ask_ai3(message)
+        send_message(sender, response)
+        return 'Message received'
+    
+def send_message(recipient_phone_number, message):
+    version = "v16.0"
+    url = f"https://graph.facebook.com/{version}/{Phone_Number_ID}/messages"
+
+    payload = {
+        "messaging_product": "whatsapp",
+        "recipient_type": "individual",
+        "to": recipient_phone_number,
+        "type": "text",
+        "text": {"body": message}
+    }
+
+    headers = {
+        'Authorization': f'Bearer {ACCESS_TOKEN}',
+        'Content-Type': 'application/json'
+    }
+
+    response = requests.post(url, headers=headers, json=payload)
+    print("Sent message")
+    print(response.text)
 
 with open(api_key_json, 'r') as f:
     jsonfile= json.load(f)
@@ -28,16 +86,28 @@ with open(api_key_json, 'r') as f:
     os.environ["OPENAI_API_KEY"]=api_key
 
 
-def construct_index(api_key, api_temp, api_model_name, api_token_max):
 
+
+def extract_text_from_pdfs(path_to_pdf):
+    with open(path_to_pdf, 'rb') as f:
+        pdf_reader = PdfReader(f)
+        text = ''
+        for page in pdf_reader.pages:
+            text += page.extract_text()
+    return text
+
+
+def construct_index(api_key, api_temp, api_model_name, api_token_max):
+    
+    os.environ["OPENAI_API_KEY"]=api_key
     # set maximum input size
     max_input_size = 4096
     # set number of output tokens
     num_outputs = int(api_token_max)
     # set maximum chunk overlap
-    max_chunk_overlap = 20
+    max_chunk_overlap = 50
     # set chunk size limit
-    chunk_size_limit = 600
+    chunk_size_limit = 1195
 
     my_dir = os.path.dirname(__file__)
     pickle_file_path = os.path.join(my_dir, 'context_data/data')
@@ -58,6 +128,18 @@ def construct_index(api_key, api_temp, api_model_name, api_token_max):
 
     return index
 
+
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        # get data from json file   
+        if request.form['password'] == password and request.form['email'] == username:
+            islogin=True
+            return redirect('/')
+        else:
+            render_template('login.html', error="Invalid username or password")
+    return render_template('login.html')
 
 @app.route('/clearchhat')
 def clear_chat_history():
@@ -225,7 +307,24 @@ def uploadFile():
      document_filename = document_file.filename
      if document_filename:
         document_path = os.path.join(my_dir+'/context_data', 'data', document_filename,)
+        #ceck if file isd pdf
+        
         document_file.save(document_path)
+
+        if document_filename.lower().endswith('.pdf') :
+            print("pdf file")
+            #convert pdf to txt
+            text = extract_text_from_pdfs(document_path)
+            #save txt file
+            document_filename_new = document_filename.lower().replace(".pdf", ".txt")
+            document_path_new = os.path.join(my_dir+'/context_data', 'data', document_filename_new,)
+            print("saving file "+document_path_new)
+            with open(document_path_new, 'w') as f:
+                f.write(text)
+                os.remove(document_path)
+           
+
+        
         file_list=get_files()
       
         return  redirect("/upload") #render_template('upload.html',success='File uploaded successfully',api_key=api_key, api_temp=api_temp, api_model_name=api_model_name, api_token_max=api_token_max,file_list=file_list)
@@ -282,7 +381,10 @@ def answer3():
 @app.route('/upload', methods=['GET', 'POST'])
 def upload():
     files = get_files()
+    if(login == False):
+        return redirect("/login")
     if request.method == 'POST':
+        
         if 'upload-file"' in request.form:
             #save file
             file = request.files['file']
@@ -291,7 +393,14 @@ def upload():
 
 
             return render_template('upload.html',success='File uploaded successfully',api_key=api_key, api_temp=api_temp, api_model_name=api_model_name, api_token_max=api_token_max,files=files)
-
+        if 'save_config' in request.form:
+            api_key = request.form['api_key']
+            api_temp = request.form['api_temp']
+            api_model_name = request.form['api_model_name']
+            api_token_max = request.form['api_token_max']
+            with open(my_dir+'/api_key.json', 'w') as f:
+                json.dump({'api_key':api_key,'api_temp':api_temp,'api_model_name':api_model_name,'api_token_max':api_token_max}, f)
+                return render_template('upload.html', success='Saved Configuratin',api_key=api_key, api_temp=api_temp, api_model_name=api_model_name, api_token_max=api_token_max,files=files)
         if 'chat_screen' in request.form:
             return render_template('index.html')
 
@@ -303,7 +412,12 @@ def upload():
             api_token_max = request.form['api_token_max']
             with open(my_dir+'/api_key.json', 'w') as f:
                 json.dump({'api_key':api_key,'api_temp':api_temp,'api_model_name':api_model_name,'api_token_max':api_token_max}, f)
-                construct_index(api_key=api_key, api_temp=api_temp,api_model_name=api_model_name,api_token_max=api_token_max)
+                try:
+                    construct_index(api_key=api_key, api_temp=api_temp,api_model_name=api_model_name,api_token_max=api_token_max)
+                except Exception as e:
+                    print(e)
+                    return render_template('upload.html', error='Training failed, make sure your payment is added in at https://platform.openai.com/account/billing/overview',api_key=api_key, api_temp=api_temp, api_model_name=api_model_name, api_token_max=api_token_max,files=files)
+                
                 return render_template('upload.html', success='Trained successfully',api_key=api_key, api_temp=api_temp, api_model_name=api_model_name, api_token_max=api_token_max,files=files)
 
         if'submit' in request.form:
