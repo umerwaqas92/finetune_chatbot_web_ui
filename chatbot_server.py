@@ -7,12 +7,28 @@ from langchain import OpenAI
 from flask_cors import CORS
 import datetime
 from PyPDF2 import PdfReader
+import logging
+from werkzeug.serving import make_server
 
 
+log_file = 'error.log'
 
 
 app = Flask(__name__)
 CORS(app)
+
+# Add an error handler
+@app.errorhandler(Exception)
+def handle_exception(e):
+    # Log the exception
+    app.logger.exception(e)
+    
+    # Return a JSON error response
+    response = jsonify({'error': str(e)})
+    response.status_code = 500
+    return response
+
+
 
 
 # os.environ["OPENAI_API_KEY"]="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"
@@ -150,12 +166,14 @@ my_dir = os.path.dirname(__file__)
 pickle_file_path = os.path.join(my_dir, 'index.json')
 index2 = GPTSimpleVectorIndex.load_from_disk(pickle_file_path)
 
+
+
 def ask_ai(query):
     # update_config()
     # if(index2==None):
     #     pickle_file_path = os.path.join(my_dir, 'index.json')
-    print(os.environ["OPENAI_API_KEY"])
-    os.environ["OPENAI_API_KEY"] = "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"
+    # print(os.environ["OPENAI_API_KEY"])
+    # os.environ["OPENAI_API_KEY"] = "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"
 
    
     response = index2.query(query, response_mode="compact")
@@ -209,6 +227,24 @@ def construct_index(api_key, api_temp, api_model_name, api_token_max):
     index2=index
 
     return index
+
+
+@app.route('/restart', methods=['Get', 'POST'])
+def restart():
+    # Check for a restart token in the request body
+    # if request.form.get('token') == 'my_restart_token':
+        # Close the server socket
+    shutdown_func = request.environ.get('werkzeug.server.shutdown')
+    if shutdown_func is not None:
+        shutdown_func()
+
+    # Restart the server
+    make_server('localhost', 5000, app).serve_forever()
+    redirect('/')
+
+
+    # return 'Server restarted'
+
 
 
 @app.route('/login', methods=['GET', 'POST'])
